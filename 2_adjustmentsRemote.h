@@ -15,11 +15,16 @@
 // PWM mode active, if SBUS, IBUS, and PPM are disabled (// in front of #define)
 
 // SBUS communication (SBUS header, 13 channels. This is my preferred communication protocol)--------
+<<<<<<< HEAD
 #define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
 boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS signal (for example from my "Micro RC" receiver)
+=======
+//#define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
+//boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS signal (for example from my "Micro RC" receiver)
+>>>>>>> adjusted to GT4 Evo and IBus
 
 // IBUS communication (RX header, 13 channels not recommended, NO FAILSAFE, if bad contact in iBUS wiring!) --------
-//#define IBUS_COMMUNICATION // control signals are coming in via the IBUS interface (comment it out for classic PWM RC signals)
+#define IBUS_COMMUNICATION // control signals are coming in via the IBUS interface (comment it out for classic PWM RC signals)
 
 // PPM communication (RX header, 8 channels, working fine, but channel signals are a bit jittery) --------
 //#define PPM_COMMUNICATION // control signals are coming in via the PPM interface (comment it out for classic PWM RC signals)
@@ -52,6 +57,7 @@ boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS si
 // Flysky FS-i6X remote configuration profile -------------------------------------------------------------------------------------------
 #ifdef FLYSKY_FS_I6X
 
+<<<<<<< HEAD
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
 #define STEERING 1          // CH1 steering
@@ -67,6 +73,23 @@ boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS si
 #define HAZARDS NONE        // CH11
 #define INDICATOR_LEFT NONE // CH12
 #define INDICATOR_RIGHT NONE// CH13
+=======
+// Channel assignment
+// Remote channel ####### // Sound controller channel ##########################################
+#define STEERING 1        // CH1 steering
+#define GEARBOX 4         // CH2 3 position switch for gearbox (left throttle in tracked mode)
+#define THROTTLE 2        // CH3 throttle & brake (right throttle in tracked mode)
+#define HORN 3            // CH4 horn and bluelight / siren
+#define FUNCTION_R 5      // CH5 jake brake, high / low beam, headlight flasher, engine on / off
+#define FUNCTION_L 6      // CH6 indicators, hazards
+#define POT2 8            // CH7 pot 2
+#define MODE1 7           // CH8 mode 1 switch
+#define MODE2 9           // CH9 mode 2 switch
+#define MOMENTARY1 16     // CH10
+#define HAZARDS 16        // CH11
+#define INDICATOR_LEFT 16 // CH12
+#define INDICATOR_RIGHT 16// CH13
+>>>>>>> adjusted to GT4 Evo and IBus
 
 // Channels reversed or not
 boolean channelReversed[14] = {
