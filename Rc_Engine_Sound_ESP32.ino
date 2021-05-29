@@ -10,11 +10,12 @@
    Parts of automatic transmision code from Wombii's fork: https://github.com/Wombii/Rc_Engine_Sound_ESP32
 */
 
-const float codeVersion = 6.6; // Software revision.
+const float codeVersion = 6.9; // Software revision.
 
 //
 // =======================================================================================================
-// ! ! I M P O R T A N T ! !   SETTINGS (ADJUST THEM BEFORE CODE UPLOAD), REQUIRED ESP32 BOARD DEFINITION
+// ! ! I M P O R T A N T ! !   ALL USER SETTINGS ARE DONE IN THE FOLLOWING TABS, WHICH ARE DISPLAYED ABOVE
+// (ADJUST THEM BEFORE CODE UPLOAD), DO NOT CHANGE ANYTHING IN THIS TAB EXCEPT THE DEBUG OPTIONS
 // =======================================================================================================
 //
 
@@ -27,14 +28,9 @@ const float codeVersion = 6.6; // Software revision.
 #include "6_adjustmentsLights.h"        // <<------- Lights related adjustments
 #include "7_adjustmentsServos.h"        // <<------- Servo output related adjustments
 
-// Install ESP32 board according to: https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
-// Adjust board settings according to: https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32/blob/master/pictures/settings.png
-
-// Make sure to remove -master from your sketch folder name
-
 // DEBUG options can slow down the playback loop! Only uncomment them for debugging, may slow down your system!
-//#define CHANNEL_DEBUG // uncomment it for input signal debugging informations
-#define ESC_DEBUG // uncomment it to debug the ESC
+#define CHANNEL_DEBUG // uncomment it for input signal debugging informations
+//#define ESC_DEBUG // uncomment it to debug the ESC
 //#define AUTO_TRANS_DEBUG // uncomment it to debug the automatic transmission
 //#define MANUAL_TRANS_DEBUG // uncomment it to debug the manual transmission
 //#define TRACKED_DEBUG // debugging tracked vehicle mode
@@ -43,7 +39,7 @@ const float codeVersion = 6.6; // Software revision.
 
 //
 // =======================================================================================================
-// LIRBARIES & HEADER FILES
+// LIRBARIES & HEADER FILES, REQUIRED ESP32 BOARD DEFINITION
 // =======================================================================================================
 //
 
@@ -51,13 +47,20 @@ const float codeVersion = 6.6; // Software revision.
 #include "headers/curves.h" // Nonlinear throttle curve arrays
 
 // Libraries (you have to install all of them in the "Arduino sketchbook"/libraries folder)
-#include <statusLED.h> // https://github.com/TheDIYGuy999/statusLED <<------- Install the newest version!
-#include <SBUS.h> // https://github.com/TheDIYGuy999/SBUS you need to install my fork of this library!
-#include <rcTrigger.h> // https://github.com/TheDIYGuy999/rcTrigger <<------- v4.7: This one is now required as well
-#include <IBusBM.h> // https://github.com/bmellink/IBusBM required for IBUS interface
+// !! Do NOT install the libraries in the sketch folder.
+#include <statusLED.h> // https://github.com/TheDIYGuy999/statusLED <<------- required for LED control
+#include <SBUS.h>      // https://github.com/TheDIYGuy999/SBUS      <<------- you need to install my fork of this library!
+#include <rcTrigger.h> // https://github.com/TheDIYGuy999/rcTrigger <<------- required for RC signal processing
+#include <IBusBM.h>    // https://github.com/bmellink/IBusBM        <<------- required for IBUS interface
 
 #include "driver/rmt.h" // No need to install this, comes with ESP32 board definition (used for PWM signal detection)
 #include "driver/mcpwm.h" // for servo PWM output
+
+// Install ESP32 board according to: https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
+// Warning: do not use Espressif ESP32 board definition v1.05, its causing crash & reboot loops! Use v1.04 instead.
+// Adjust board settings according to: https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32/blob/master/pictures/settings.png
+
+// Make sure to remove -master from your sketch folder name
 
 //
 // =======================================================================================================
@@ -182,7 +185,7 @@ uint32_t maxPwmRpmPercentage = 400; // Limit required to prevent controller fron
 #define NUM_OF_PPM_CHL 8 // The number of channels inside our PPM signal (8 is the maximum!)
 #define NUM_OF_PPM_AVG 1 // Number of averaging passes (usually one, more will be slow)
 volatile int ppmInp[NUM_OF_PPM_CHL + 1] = {0}; // Input values
-volatile int ppmBuf[NUM_OF_PPM_CHL + 1] = {0}; // Buffered values
+volatile int ppmBuf[16] = {0}; // Buffered values TODO, was [NUM_OF_PPM_CHL + 1]
 volatile byte counter = NUM_OF_PPM_CHL;
 volatile byte average  = NUM_OF_PPM_AVG;
 volatile boolean ready = false;
@@ -204,6 +207,8 @@ IBusBM iBus;    // IBUS object
 bool ibusInit;
 uint32_t maxIbusRpmPercentage = 350; // Limit required to prevent controller fron crashing @ high engine RPM
 
+// Interrupt latches
+volatile boolean couplerSwitchInteruptLatch; // this is enabled, if the coupler switch pin change interrupt is detected
 
 // Control input signals
 #define PULSE_ARRAY_SIZE 14                              // 13 channels (+ the unused CH0)
@@ -242,6 +247,7 @@ volatile boolean engineStop = false;                     // Active, if engine is
 volatile boolean jakeBrakeRequest = false;               // Active, if engine jake braking is requested
 volatile boolean engineJakeBraking = false;              // Active, if engine is jake braking
 volatile boolean wastegateTrigger = false;               // Trigger wastegate (blowoff) after rapid throttle drop
+volatile boolean blowoffTrigger = false;                 // Trigger jake brake sound (blowoff) after rapid throttle drop
 volatile boolean dieselKnockTrigger = false;             // Trigger Diesel ignition "knock"
 volatile boolean dieselKnockTriggerFirst = false;        // The first  Diesel ignition "knock" per sequence
 volatile boolean airBrakeTrigger = false;                // Trigger for air brake noise
@@ -266,7 +272,7 @@ volatile uint16_t throttleDependentKnockVolume = 0;      // engine Diesel knock 
 volatile uint16_t throttleDependentTurboVolume = 0;      // turbo volume according to rpm
 volatile uint16_t throttleDependentFanVolume = 0;        // cooling fan volume according to rpm
 volatile uint16_t throttleDependentChargerVolume = 0;    // cooling fan volume according to rpm
-volatile uint16_t throttleDependentWastegateVolume = 0;  // wastegate volume according to rpm
+volatile uint16_t rpmDependentWastegateVolume = 0;       // wastegate volume according to rpm
 volatile int16_t masterVolume = 100;                     // Master volume percentage
 volatile uint8_t dacOffset = 0;  // 128, but needs to be ramped up slowly to prevent popping noise, if switched on
 
@@ -396,7 +402,7 @@ void IRAM_ATTR variablePlaybackTimer() {
       variableTimerTicks = engineSampleRate;  // our variable idle sampling rate!
       timerAlarmWrite(variableTimer, variableTimerTicks, true); // // change timer ticks, autoreload true
 
-      if (!engineJakeBraking) {
+      if (!engineJakeBraking && !blowoffTrigger) {
         if (curEngineSample < sampleCount - 1) {
           a1 = (samples[curEngineSample] * throttleDependentVolume / 100 * idleVolumePercentage / 100); // Idle sound
           a3 = 0;
@@ -672,7 +678,7 @@ void IRAM_ATTR fixedPlaybackTimer() {
   // Wastegate (blowoff) sound, triggered after rapid throttle drop -----------------------------------
   if (wastegateTrigger) {
     if (curWastegateSample < wastegateSampleCount - 1) {
-      b3 = (wastegateSamples[curWastegateSample] * throttleDependentWastegateVolume / 100 * wastegateVolumePercentage / 100);
+      b3 = (wastegateSamples[curWastegateSample] * rpmDependentWastegateVolume / 100 * wastegateVolumePercentage / 100);
       curWastegateSample ++;
     }
     else {
@@ -766,6 +772,7 @@ void IRAM_ATTR fixedPlaybackTimer() {
   }
 
   // Trailer coupling sound, triggered by switch -----------------------------------------------
+#ifdef COUPLING_SOUND
   if (couplingTrigger) {
     if (curCouplingSample < couplingSampleCount - 1) {
       b8 = (couplingSamples[curCouplingSample] * couplingVolumePercentage / 100);
@@ -782,8 +789,8 @@ void IRAM_ATTR fixedPlaybackTimer() {
 
   // Trailer uncoupling sound, triggered by switch -----------------------------------------------
   if (uncouplingTrigger) {
-    if (curUncouplingSample < couplingSampleCount - 1) {
-      b9 = (uncouplingSamples[curCouplingSample] * couplingVolumePercentage / 100);
+    if (curUncouplingSample < uncouplingSampleCount - 1) {
+      b9 = (uncouplingSamples[curUncouplingSample] * couplingVolumePercentage / 100);
       curUncouplingSample ++;
     }
     else {
@@ -794,6 +801,7 @@ void IRAM_ATTR fixedPlaybackTimer() {
     b9 = 0;
     curUncouplingSample = 0; // ensure, next sound will start @ first sample
   }
+#endif
 
   // Mixing sounds together ----
   a = a1 + a2; // Horn & siren
@@ -879,12 +887,7 @@ void IRAM_ATTR readPpm() {
 //
 #if not defined THIRD_BRAKLELIGHT
 void trailerPresenceSwitchInterrupt() {
-  if (digitalRead(COUPLER_SWITCH_PIN)) {
-    couplingTrigger = true;
-  }
-  else {
-    uncouplingTrigger = true;
-  }
+  couplerSwitchInteruptLatch = true;
 }
 #endif
 //
@@ -1299,9 +1302,6 @@ void processRawChannels() {
     Serial.println(pulseWidth[11]);
     Serial.println(pulseWidth[12]);
     Serial.println(pulseWidth[13]);
-    Serial.println(pulseWidth[14]);
-    Serial.println(pulseWidth[15]);
-    Serial.println(pulseWidth[16]);
     Serial.println(currentThrottle);
     Serial.println("States:");
     Serial.println(mode1);
@@ -1334,7 +1334,7 @@ void failsafeRcSignals() {
 
 //
 // =======================================================================================================
-// MCPWM SERVO RC SIGNAL OUTPUT (bus communication mode only)
+// MCPWM SERVO RC SIGNAL OUTPUT (BUS communication mode only)
 // =======================================================================================================
 //
 // See: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/mcpwm.html#configure
@@ -1343,10 +1343,20 @@ void mcpwmOutput() {
 
   // Steering CH1
   uint16_t steeringServoMicros;
-  if (pulseWidth[1] < 1500) steeringServoMicros = map(pulseWidth[1], 1000, 1500, CH1L, CH1C);
-  else if (pulseWidth[1] > 1500) steeringServoMicros = map(pulseWidth[1], 1500, 2000, CH1C, CH1R);
-  else steeringServoMicros = CH1C;
-  mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, steeringServoMicros);
+  static uint16_t steeringServoMicrosDelayed = CH1C;
+  static unsigned long steeringDelayMicros;
+  if (micros() - steeringDelayMicros > STEERING_RAMP_TIME) { // Adjustable steering max. ramp speed
+    steeringDelayMicros = micros();
+    if (pulseWidth[1] < 1500) steeringServoMicros = map(pulseWidth[1], 1000, 1500, CH1L, CH1C);
+    else if (pulseWidth[1] > 1500) steeringServoMicros = map(pulseWidth[1], 1500, 2000, CH1C, CH1R);
+    else steeringServoMicros = CH1C;
+    if (steeringServoMicrosDelayed < steeringServoMicros) steeringServoMicrosDelayed++;
+    if (steeringServoMicrosDelayed > steeringServoMicros) steeringServoMicrosDelayed--;
+    steeringServoMicrosDelayed = constrain(steeringServoMicrosDelayed, min(CH1L, CH1R), max(CH1L, CH1R));
+    //Serial.println(steeringServoMicros);
+    //Serial.println(steeringServoMicrosDelayed);
+    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, steeringServoMicrosDelayed);
+  }
 
   // Shifting CH2
   static uint16_t shiftingServoMicros;
@@ -1449,6 +1459,7 @@ void mapThrottle() {
 
   // As a base for some calculations below, fade the current throttle to make it more natural
   static unsigned long throttleFaderMicros;
+  static boolean blowoffLock;
   if (micros() - throttleFaderMicros > 500) { // Every 0.5ms
     throttleFaderMicros = micros();
 
@@ -1486,8 +1497,8 @@ void mapThrottle() {
   else throttleDependentChargerVolume = chargerIdleVolumePercentage;
 
   // Calculate engine rpm dependent wastegate volume
-  if (engineRunning) throttleDependentWastegateVolume = map(currentRpm, 0, 500, wastegateIdleVolumePercentage, 100);
-  else throttleDependentWastegateVolume = wastegateIdleVolumePercentage;
+  if (engineRunning) rpmDependentWastegateVolume = map(currentRpm, 0, 500, wastegateIdleVolumePercentage, 100);
+  else rpmDependentWastegateVolume = wastegateIdleVolumePercentage;
 
 
   // Calculate engine load (used for torque converter slip simulation)
@@ -1508,8 +1519,9 @@ void engineMassSimulation() {
   static int32_t  lastThrottle;
   uint16_t converterSlip;
   static unsigned long throtMillis;
-  static unsigned long printMillis;
+  //static unsigned long printMillis; // TODO
   static unsigned long wastegateMillis;
+  static unsigned long blowoffMillis;
   uint8_t timeBase;
 
 #ifdef SUPER_SLOW
@@ -1610,6 +1622,14 @@ void engineMassSimulation() {
     wastegateMillis = millis();
     wastegateTrigger = true;
   }
+
+#if defined JAKEBRAKE_ENGINE_SLOWDOWN && defined JAKE_BRAKE_SOUND
+  // Use jake brake to slow down engine while releasing throttle in neutral or during upshifting while applying throttle
+  // for some vehicles like Volvo FH open pipe. See example: https://www.youtube.com/watch?v=MU1iwzl33Zw&list=LL&index=4
+  if (!wastegateTrigger) blowoffMillis = millis();
+  blowoffTrigger = ((gearUpShiftingInProgress || neutralGear) && millis() - blowoffMillis > 20 && millis() - blowoffMillis < 250 );
+#endif
+  
   lastThrottle = currentThrottle;
 }
 
@@ -1621,7 +1641,7 @@ void engineMassSimulation() {
 
 void engineOnOff() {
 
-  static unsigned long pulseDelayMillis;
+  // static unsigned long pulseDelayMillis; // TODO
   static unsigned long idleDelayMillis;
 
   // Engine automatically switched on or off depending on throttle position and 15s delay timne
@@ -1841,7 +1861,7 @@ void led() {
 
     case 2: // cab & roof & side lights ---------------------------------------------------------------------
       cabLight.pwm(255 - crankingDim);
-      sideLight.pwm(200 - crankingDim);
+      sideLight.pwm(sideLightsBrightness - crankingDim);
       headLightsSub(false, false, true);
       fogLight.off();
       brakeLightsSub(0); // 0 brightness, if not braking
@@ -1882,7 +1902,7 @@ void led() {
 //
 
 void shaker() {
-  int32_t shakerRpm;
+  int32_t shakerRpm = 0;
 
   // Set desired shaker rpm
   if (engineRunning) shakerRpm = map(currentRpm, minRpm, maxRpm, shakerIdle, shakerFullThrottle);
@@ -2071,7 +2091,7 @@ void esc() {
   if (selectedGear == 3) escRampTime = escRampTimeThirdGear; // about 75
 #endif
 
-  if (millis() - escMillis > escRampTime) { // About very 2 - 6ms
+  if (millis() - escMillis > escRampTime) { // About very 20 - 75ms
     escMillis = millis();
 
     // calulate throttle dependent brake & acceleration steps
@@ -2133,7 +2153,6 @@ void esc() {
           if (escPulseWidth >= escPulseMaxNeutral) escPulseWidth += (driveRampRate * driveRampGain); //Faster
           else escPulseWidth = escPulseMaxNeutral; // Initial boost
         }
-        //if (escPulseWidth < pulseWidth[3] && currentSpeed < speedLimit) escPulseWidth += (driveRampRate * driveRampGain); // Faster
         if (escPulseWidth > pulseWidth[3] && escPulseWidth > pulseZero[3]) escPulseWidth -= (driveRampRate * driveRampGain); // Slower
 
         if (gearUpShiftingPulse && shiftingAutoThrottle) { // lowering RPM, if shifting up transmission
@@ -2160,6 +2179,7 @@ void esc() {
         escInReverse = false;
         escIsDriving = false;
         if (escPulseWidth > pulseZero[3]) escPulseWidth -= brakeRampRate; // brake with variable deceleration
+        if (escPulseWidth < pulseZero[3]) escPulseWidth = pulseZero[3]; // Overflow bug prevention!
 
         if (pulse == 0 && escPulse == 1 && !neutralGear) {
           driveState = 1; // Driving forward
@@ -2179,7 +2199,6 @@ void esc() {
           if (escPulseWidth <= escPulseMinNeutral) escPulseWidth -= (driveRampRate * driveRampGain); //Faster
           else escPulseWidth = escPulseMinNeutral; // Initial boost
         }
-        //if (escPulseWidth > pulseWidth[3] && currentSpeed < speedLimit) escPulseWidth -= (driveRampRate * driveRampGain); // Faster
         if (escPulseWidth < pulseWidth[3] && escPulseWidth < pulseZero[3]) escPulseWidth += (driveRampRate * driveRampGain); // Slower
 
         if (gearUpShiftingPulse && shiftingAutoThrottle) { // lowering RPM, if shifting up transmission
@@ -2206,6 +2225,7 @@ void esc() {
         escInReverse = true;
         escIsDriving = false;
         if (escPulseWidth < pulseZero[3]) escPulseWidth += brakeRampRate; // brake with variable deceleration
+        if (escPulseWidth > pulseZero[3]) escPulseWidth = pulseZero[3]; // Overflow bug prevention!
 
         if (pulse == 0 && escPulse == -1 && !neutralGear) {
           driveState = 3; // Driving backwards
@@ -2292,7 +2312,7 @@ void triggerHorn() {
   }
 
   // detect bluelight trigger ( impulse length < 1300us) ----------
-  if (pulseWidth[4] < 1300 && pulseWidth[4] > pulseMinLimit[4] || sirenLatch) {
+  if ((pulseWidth[4] < 1300 && pulseWidth[4] > pulseMinLimit[4]) || sirenLatch) {
     blueLightTrigger = true;
   }
   else {
@@ -2475,6 +2495,36 @@ void rcTrigger() {
 
 //
 // =======================================================================================================
+// TRAILER PRESENCE SWITCH
+// =======================================================================================================
+//
+
+void trailerPresenceSwitchRead() {
+#if not defined THIRD_BRAKLELIGHT
+  static unsigned long switchMillis;
+  static boolean couplerSwitchStateLatch;
+
+  if (couplerSwitchInteruptLatch) {
+    switchMillis = millis();
+    couplerSwitchInteruptLatch = false;
+    couplerSwitchStateLatch = true;
+  }
+
+  if (couplerSwitchStateLatch && millis() - switchMillis > 1) { // Debouncing delay
+    if (digitalRead(COUPLER_SWITCH_PIN)) {
+      couplingTrigger = true;
+      couplerSwitchStateLatch = false;
+    }
+    else {
+      uncouplingTrigger = true;
+      couplerSwitchStateLatch = false;
+    }
+  }
+#endif
+}
+
+//
+// =======================================================================================================
 // MAIN LOOP, RUNNING ON CORE 1
 // =======================================================================================================
 //
@@ -2504,8 +2554,12 @@ void loop() {
   // Indicator (turn signal) triggering
   triggerIndicators();
 
-  // rcTrigger (experimental)
+  // rcTrigger
   rcTrigger();
+
+  // Read trailer switch state
+  trailerPresenceSwitchRead();
+
 }
 
 //
@@ -2519,8 +2573,6 @@ void Task1code(void *pvParameters) {
 
     // DAC offset fader
     dacOffsetFade();
-
-    // Former map throttle TODO
 
     // Simulate engine mass, generate RPM signal
     engineMassSimulation();
