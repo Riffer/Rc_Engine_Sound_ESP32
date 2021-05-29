@@ -1270,6 +1270,7 @@ void readIbusCommands() {
   pulseWidthRaw[12] = iBus.readChannel(INDICATOR_LEFT - 1); // CH12
   pulseWidthRaw[13] = iBus.readChannel(INDICATOR_RIGHT - 1); // CH13
 
+  
   // Normalize, auto zero and reverse channels
   processRawChannels();
 }
@@ -1317,7 +1318,7 @@ void processRawChannels() {
     Serial.println(pulseWidth[2]);
     Serial.println(pulseWidth[3]);
     Serial.println(pulseWidth[4]);
-    Serial.println(pulseWidth[5]);
+/*    Serial.println(pulseWidth[5]);
     Serial.println(pulseWidth[6]);
     Serial.println(pulseWidth[7]);
     Serial.println(pulseWidth[8]);
@@ -1326,6 +1327,7 @@ void processRawChannels() {
     Serial.println(pulseWidth[11]);
     Serial.println(pulseWidth[12]);
     Serial.println(pulseWidth[13]);
+    */
     Serial.println(currentThrottle);
     Serial.println("States:");
     Serial.println(mode1);
