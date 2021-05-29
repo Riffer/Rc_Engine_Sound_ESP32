@@ -15,11 +15,11 @@
 // PWM mode active, if SBUS, IBUS, SERIAL and PPM are disabled (// in front of #define)
 
 // SBUS communication (SBUS header, 13 channels. This is my preferred communication protocol)--------
-#define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
-boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS signal (for example from my "Micro RC" receiver)
+//#define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
+//boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS signal (for example from my "Micro RC" receiver)
 
 // IBUS communication (RX header, 13 channels not recommended, NO FAILSAFE, if bad contact in iBUS wiring!) --------
-//#define IBUS_COMMUNICATION // control signals are coming in via the IBUS interface (comment it out for classic PWM RC signals)
+#define IBUS_COMMUNICATION // control signals are coming in via the IBUS interface (comment it out for classic PWM RC signals)
 
 // PPM communication (RX header, 8 channels, working fine, but channel signals are a bit jittery) --------
 //#define PPM_COMMUNICATION // control signals are coming in via the PPM interface (comment it out for classic PWM RC signals)
@@ -55,11 +55,11 @@ boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS si
 // Channel assignment
 // Remote channel ####### // Sound controller channel ##########################################
 #define STEERING 1        // CH1 steering
-#define GEARBOX 6         // CH2 3 position switch for gearbox (left throttle in tracked mode)
-#define THROTTLE 3        // CH3 throttle & brake (right throttle in tracked mode)
-#define HORN 5            // CH4 horn and bluelight / siren
-#define FUNCTION_R 2      // CH5 jake brake, high / low beam, headlight flasher, engine on / off
-#define FUNCTION_L 4      // CH6 indicators, hazards
+#define GEARBOX 4         // CH2 3 position switch for gearbox (left throttle in tracked mode)
+#define THROTTLE 2        // CH3 throttle & brake (right throttle in tracked mode)
+#define HORN 3            // CH4 horn and bluelight / siren
+#define FUNCTION_R 5      // CH5 jake brake, high / low beam, headlight flasher, engine on / off
+#define FUNCTION_L 6      // CH6 indicators, hazards
 #define POT2 8            // CH7 pot 2
 #define MODE1 7           // CH8 mode 1 switch
 #define MODE2 9           // CH9 mode 2 switch
