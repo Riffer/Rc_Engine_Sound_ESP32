@@ -40,7 +40,7 @@ const float codeVersion = 7.3; // Software revision.
 
 // DEBUG options can slow down the playback loop! Only uncomment them for debugging, may slow down your system!
 //#define CHANNEL_DEBUG // uncomment it for input signal debugging informations
-//#define ESC_DEBUG // uncomment it to debug the ESC
+#define ESC_DEBUG // uncomment it to debug the ESC
 //#define AUTO_TRANS_DEBUG // uncomment it to debug the automatic transmission
 //#define MANUAL_TRANS_DEBUG // uncomment it to debug the manual transmission
 //#define TRACKED_DEBUG // debugging tracked vehicle mode
@@ -104,7 +104,8 @@ const float codeVersion = 7.3; // Software revision.
 const uint8_t PWM_CHANNELS[PWM_CHANNELS_NUM] = { 1, 2, 3, 4, 5, 6}; // Channel numbers
 const uint8_t PWM_PINS[PWM_CHANNELS_NUM] = { 13, 12, 14, 27, 35, 34 }; // Input pin numbers
 
-#define ESC_OUT_PIN 33 // connect crawler type ESC here (working fine, but use it at your own risk! Not supported in TRACKED_MODE) -----
+//#define ESC_OUT_PIN 33 // connect crawler type ESC here (working fine, but use it at your own risk! Not supported in TRACKED_MODE) -----
+#define ESC_OUT_PIN 14 // connect crawler type ESC here (working fine, but use it at your own risk! Not supported in TRACKED_MODE) -----
 
 #define STEERING_PIN 13 // CH1 output for steering servo (bus communication only)
 #define SHIFTING_PIN 12 // CH2 output for shifting servo (bus communication only)
@@ -1012,7 +1013,9 @@ void setup() {
 
 #elif defined IBUS_COMMUNICATION // IBUS ----
   if (MAX_RPM_PERCENTAGE > maxIbusRpmPercentage) MAX_RPM_PERCENTAGE = maxIbusRpmPercentage; // Limit RPM range
-  iBus.begin(Serial2, IBUSBM_NOTIMER, COMMAND_RX, COMMAND_TX); // begin IBUS communication with compatible receivers
+  //iBus.begin(Serial2, IBUSBM_NOTIMER, COMMAND_RX, COMMAND_TX); // begin IBUS communication with compatible receivers
+  iBus.begin(Serial2, 3, COMMAND_RX, COMMAND_TX); // begin IBUS communication with compatible receivers
+
   setupMcpwm(); // mcpwm servo output setup
 
 #elif defined PPM_COMMUNICATION // PPM ----
@@ -1260,7 +1263,7 @@ void loopIbus() {
   static uint16_t iBusReadCycles;
   if (millis() - lastIbusRead > 10) { // Every 10ms
     lastIbusRead = millis();
-    iBus.loop();
+    //iBus.loop();
     if (iBusReadCycles < 100) iBusReadCycles ++; else ibusInit = true; // We need to process the entire serial package, before we read the channels for the first time! 100 OK? TODO
   }
 }
