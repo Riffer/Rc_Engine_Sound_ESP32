@@ -112,7 +112,7 @@ const uint16_t pulseSpan = 480;
 
 // Automatic or manual modes -----
 //#define AUTO_LIGHTS
-//#define AUTO_ENGINE_ON_OFF
+#define AUTO_ENGINE_ON_OFF
 //#define AUTO_INDICATORS
 
 #endif
