@@ -15,8 +15,6 @@
 // PWM mode active, if SBUS, IBUS, and PPM are disabled (// in front of #define)
 
 // SBUS communication (SBUS header, 13 channels. This is my preferred communication protocol)--------
-#define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
-boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS signal (for example from my "Micro RC" receiver)
 //#define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
 //boolean sbusInverted = true; // false = wired to non standard (inverted) SBUS signal (for example from my "Micro RC" receiver)
 
