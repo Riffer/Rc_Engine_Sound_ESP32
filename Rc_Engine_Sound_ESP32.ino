@@ -1292,16 +1292,10 @@ void readIbusCommands() {
   pulseWidthRaw[12] = iBus.readChannel(INDICATOR_LEFT - 1); // CH12
   pulseWidthRaw[13] = iBus.readChannel(INDICATOR_RIGHT - 1); // CH13
 
-<<<<<<< HEAD
   if (ibusInit) {
     // Normalize, auto zero and reverse channels
     processRawChannels();
   }
-=======
-  
-  // Normalize, auto zero and reverse channels
-  processRawChannels();
->>>>>>> a1247424bdb0c2a1ccb6d24c54b0aa87839a7559
 }
 
 //
