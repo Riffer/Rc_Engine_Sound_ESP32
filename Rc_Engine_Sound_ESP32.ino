@@ -39,8 +39,8 @@ const float codeVersion = 7.3; // Software revision.
 #include "8_adjustmentsSound.h"         // <<------- Sound related adjustments
 
 // DEBUG options can slow down the playback loop! Only uncomment them for debugging, may slow down your system!
-//#define CHANNEL_DEBUG // uncomment it for input signal debugging informations
-#define ESC_DEBUG // uncomment it to debug the ESC
+#define CHANNEL_DEBUG // uncomment it for input signal debugging informations
+//#define ESC_DEBUG // uncomment it to debug the ESC
 //#define AUTO_TRANS_DEBUG // uncomment it to debug the automatic transmission
 //#define MANUAL_TRANS_DEBUG // uncomment it to debug the manual transmission
 //#define TRACKED_DEBUG // debugging tracked vehicle mode
@@ -1313,9 +1313,11 @@ void processRawChannels() {
   if (channelAutoZero[3]) channelAutoZero[2] = true;
 #endif
 
-  if (millis() - lastOutOfRangeMillis > 500) {
+  //if (millis() - lastOutOfRangeMillis > 500) 
+  {
     for (int i = 1; i < PULSE_ARRAY_SIZE; i++) { // For each channel:
 
+#ifdef inuse
       // Position valid for auto calibration? Must be between 1400 and 1600 microseconds
       if (channelAutoZero[i] && !autoZeroDone && (pulseWidthRaw[i] > 1600 || pulseWidthRaw[i] < 1400)) {
         channel = i;
@@ -1327,6 +1329,7 @@ void processRawChannels() {
         i--;
         return;
       }
+#endif
 
       // Take channel raw data, reverse them, if required and store them
       if (channelReversed[i]) pulseWidth[i] = map(pulseWidthRaw[i], 0, 3000, 3000, 0); // Reversed
@@ -1368,7 +1371,9 @@ void processRawChannels() {
     Serial.println(pulseWidth[2]);
     Serial.println(pulseWidth[3]);
     Serial.println(pulseWidth[4]);
-/*    Serial.println(pulseWidth[5]);
+    Serial.print("AutoZeroDone: ");
+    Serial.println(autoZeroDone);
+    /*    Serial.println(pulseWidth[5]);
     Serial.println(pulseWidth[6]);
     Serial.println(pulseWidth[7]);
     Serial.println(pulseWidth[8]);
@@ -2435,7 +2440,7 @@ void triggerHorn() {
   }
 
   // detect siren trigger ( impulse length < 1100us) ----------
-  if (pulseWidth[4] < 1100 && pulseWidth[4] > pulseMinLimit[4]) {
+  if (pulseWidth[2] > 1100 && pulseWidth[2] < pulseMaxLimit[2]) {
     sirenTrigger = true;
     sirenLatch = true;
   }
