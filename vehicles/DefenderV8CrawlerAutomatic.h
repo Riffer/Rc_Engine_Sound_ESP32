@@ -122,8 +122,8 @@ volatile int shiftingVolumePercentage = 100; // Adjust the shifting volume (usua
 
 // Choose the additional "sound1" (uncomment the one you want) --------
 volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually = 100%)
-//#include "sounds/007JamesBond.h" // James Bond melody
-#include "sounds/door.h" // opening and closing the door
+#include "sounds/007JamesBond.h" // James Bond melody
+//#include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
 volatile int reversingVolumePercentage = 0; // Adjust the reversing sound volume (usually = 70%)
@@ -142,11 +142,11 @@ const boolean INDICATOR_DIR = true; // adjust indicator direction with true or f
 const boolean doubleFlashBlueLight = true; // double flash blue lights if "true", "rotating" beacons if "false"
 
 // Acceleration & deceleration settings ----------------------------------------------------------------------------------
-const uint8_t escRampTimeFirstGear = 20; // determines, how fast the acceleration and deceleration happens (about 15 - 25, 20 for King Hauler)
-const uint8_t escRampTimeSecondGear = 80; // 50 for King Hauler (this value is always in use for automatic transmission, about 80)
-const uint8_t escRampTimeThirdGear = 75; // 75 for King Hauler
-const uint8_t escBrakeSteps = 30; // determines, how fast the ESC is able to brake down (20 - 30, 30 for King Hauler)
-const uint8_t escAccelerationSteps = 3; // determines, how fast the ESC is able to accelerate (2 - 3, 3 for King Hauler)
+const uint8_t escRampTimeFirstGear = 10; // determines, how fast the acceleration and deceleration happens (about 15 - 25, 20 for King Hauler)
+const uint8_t escRampTimeSecondGear = 30; // 50 for King Hauler (this value is always in use for automatic transmission, about 80)
+const uint8_t escRampTimeThirdGear = 60; // 75 for King Hauler
+const uint8_t escBrakeSteps = 20; // determines, how fast the ESC is able to brake down (20 - 30, 30 for King Hauler)
+const uint8_t escAccelerationSteps = 2; // determines, how fast the ESC is able to accelerate (2 - 3, 3 for King Hauler)
 
 // Gearbox parameters (select number of automatic gears in curves.h)-----------------------------------------------------
 const boolean automatic = true; // false = linear rpm curve, true = automatic transmission with torque converter is simulated (use it, if you don't have a real shifting transmission)
@@ -162,8 +162,8 @@ uint16_t clutchEngagingPoint = 100; // CEP. The "clutch" is engaging above this 
 uint32_t MAX_RPM_PERCENTAGE = 300; // NOTE! Was called TOP_SPEED_MULTIPLIER (TSM) in earlier versions and was a multiplier instead of a percentage!
 
 // Engine mass simulation
-const int8_t acc = 2; // Acceleration step (2) 1 = slow for locomotive engine, 9 = fast for trophy truck
-const int8_t dec = 1; // Deceleration step (1) 1 = slow for locomotive engine, 5 = fast for trophy truck
+const int8_t acc = 9; // Acceleration step (2) 1 = slow for locomotive engine, 9 = fast for trophy truck
+const int8_t dec = 9; // Deceleration step (1) 1 = slow for locomotive engine, 5 = fast for trophy truck
 
 // Vehicle type ----------------------------------------------------------------------------------------------------
 // #define TRACKED_MODE // For Tanks, diggers, excavators etc. which use dual throttle input on CH2 and CH3

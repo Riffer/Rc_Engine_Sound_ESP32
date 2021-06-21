@@ -2441,11 +2441,13 @@ void triggerHorn() {
 
   // detect siren trigger ( impulse length < 1100us) ----------
   if (pulseWidth[2] > 1100 && pulseWidth[2] < pulseMaxLimit[2]) {
-    sirenTrigger = true;
-    sirenLatch = true;
+    //sirenTrigger = true;
+    //sirenLatch = true;
+    sound1trigger = true;
   }
   else {
     sirenTrigger = false;
+    sound1trigger = false;
   }
 
   // detect bluelight trigger ( impulse length < 1300us) ----------
